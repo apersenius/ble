@@ -2,6 +2,7 @@ package hci
 
 import (
 	"net"
+	"sync"
 
 	"github.com/go-ble/ble"
 	"github.com/go-ble/ble/linux/adv"
@@ -29,6 +30,7 @@ func newAdvertisement(e evt.LEAdvertisingReport, i int) *Advertisement {
 // Advertisement implements ble.Advertisement and other functions that are only
 // available on Linux.
 type Advertisement struct {
+	sync.Mutex
 	e  evt.LEAdvertisingReport
 	i  int
 	sr *Advertisement
@@ -39,8 +41,10 @@ type Advertisement struct {
 
 // setScanResponse ssociate sca response to the existing advertisement.
 func (a *Advertisement) setScanResponse(sr *Advertisement) {
+	a.Lock()
 	a.sr = sr
 	a.p = nil // clear the cached.
+	a.Unlock()
 }
 
 // packets returns the combined advertising packet and scan response (if presents)
@@ -53,27 +57,42 @@ func (a *Advertisement) packets() *adv.Packet {
 
 // LocalName returns the LocalName of the remote peripheral.
 func (a *Advertisement) LocalName() string {
-	return a.packets().LocalName()
+	a.Lock()
+	name := a.packets().LocalName()
+	a.Unlock()
+	return name
 }
 
 // ManufacturerData returns the ManufacturerData of the advertisement.
 func (a *Advertisement) ManufacturerData() []byte {
-	return a.packets().ManufacturerData()
+	a.Lock()
+	data := a.packets().ManufacturerData()
+	a.Unlock()
+	return data
 }
 
 // ServiceData returns the service data of the advertisement.
 func (a *Advertisement) ServiceData() []ble.ServiceData {
-	return a.packets().ServiceData()
+	a.Lock()
+	data := a.packets().ServiceData()
+	a.Unlock()
+	return data
 }
 
 // Services returns the service UUIDs of the advertisement.
 func (a *Advertisement) Services() []ble.UUID {
-	return a.packets().UUIDs()
+	a.Lock()
+	uuids := a.packets().UUIDs()
+	a.Unlock()
+	return uuids
 }
 
 // OverflowService returns the UUIDs of overflowed service.
 func (a *Advertisement) OverflowService() []ble.UUID {
-	return a.packets().UUIDs()
+	a.Lock()
+	uuids := a.packets().UUIDs()
+	a.Unlock()
+	return uuids
 }
 
 // TxPowerLevel returns the tx power level of the remote peripheral.
@@ -84,33 +103,46 @@ func (a *Advertisement) TxPowerLevel() int {
 
 // SolicitedService returns UUIDs of solicited services.
 func (a *Advertisement) SolicitedService() []ble.UUID {
-	return a.packets().ServiceSol()
+	a.Lock()
+	sol := a.packets().ServiceSol()
+	a.Unlock()
+	return sol
 }
 
 // Connectable indicates weather the remote peripheral is connectable.
 func (a *Advertisement) Connectable() bool {
-	return a.EventType() == evtTypAdvDirectInd || a.EventType() == evtTypAdvInd
+	a.Lock()
+	connectable := a.EventType() == evtTypAdvDirectInd || a.EventType() == evtTypAdvInd
+	a.Unlock()
+	return connectable
 }
 
 // RSSI returns RSSI signal strength.
 func (a *Advertisement) RSSI() int {
-	return int(a.e.RSSI(a.i))
+	a.Lock()
+	rssi := int(a.e.RSSI(a.i))
+	a.Unlock()
+	return rssi
 }
 
 // Addr returns the address of the remote peripheral.
 func (a *Advertisement) Addr() ble.Addr {
+	a.Lock()
 	b := a.e.Address(a.i)
 	addr := net.HardwareAddr([]byte{b[5], b[4], b[3], b[2], b[1], b[0]})
 	if a.e.AddressType(a.i) == 1 {
+		a.Unlock()
 		return RandomAddress{addr}
 	}
+	a.Unlock()
 	return addr
 }
 
 // EventType returns the event type of Advertisement.
 // This is linux sepcific.
 func (a *Advertisement) EventType() uint8 {
-	return a.e.EventType(a.i)
+	etype := a.e.EventType(a.i)
+	return etype
 }
 
 // AddressType returns the address type of the Advertisement.

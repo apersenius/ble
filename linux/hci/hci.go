@@ -237,7 +237,9 @@ func (h *HCI) Send(c Command, r CommandRP) error {
 }
 
 func (h *HCI) send(c Command) ([]byte, error) {
+	h.Lock()
 	if h.err != nil {
+		h.Unlock()
 		return nil, h.err
 	}
 	p := &pkt{c, make(chan []byte)}
@@ -285,7 +287,7 @@ func (h *HCI) send(c Command) ([]byte, error) {
 	h.muSent.Lock()
 	delete(h.sent, c.OpCode())
 	h.muSent.Unlock()
-
+	h.Unlock()
 	return ret, err
 }
 
@@ -371,7 +373,9 @@ func (h *HCI) handleEvt(b []byte) error {
 		h.err = fmt.Errorf("invalid event packet: % X", b)
 	}
 	if f := h.evth[code]; f != nil {
+		h.Lock()
 		h.err = f(b[2:])
+		h.Unlock()
 		return nil
 	}
 	if code == 0xff { // Ignore vendor events
