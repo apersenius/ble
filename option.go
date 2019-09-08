@@ -3,7 +3,7 @@ package ble
 import (
 	"time"
 
-	"github.com/go-ble/ble/linux/hci/cmd"
+	"github.com/apersenius/ble/linux/hci/cmd"
 )
 
 // DeviceOption is an interface which the device should implement to allow using configuration options

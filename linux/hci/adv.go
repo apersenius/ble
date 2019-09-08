@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/go-ble/ble"
-	"github.com/go-ble/ble/linux/adv"
-	"github.com/go-ble/ble/linux/hci/evt"
+	"github.com/apersenius/ble"
+	"github.com/apersenius/ble/linux/adv"
+	"github.com/apersenius/ble/linux/hci/evt"
 )
 
 // RandomAddress is a Random Device Address.
